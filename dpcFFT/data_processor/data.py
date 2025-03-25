@@ -28,8 +28,11 @@ def add_noise(model: PointCloud, noise_level: float, noise_extra_level: float) -
     Noise the point cloud by adding extra points.
     """
     points = np.asarray(model.points)
-    noise = np.random.normal(0, noise_level, (int(points.shape[0] * noise_extra_level), 3))
-    results = np.concatenate((points, noise), axis=0)
+    noise_size = int(points.shape[0] * noise_extra_level)
+    noise = np.random.normal(0, noise_level, (noise_size, 3))
+    n = np.random.choice(points.shape[0], size=noise_size, replace=True)
+    n = points[n]
+    results = np.concatenate((points, n + noise), axis=0)
     noisy_model = o3d.geometry.PointCloud()
     noisy_model.points = o3d.utility.Vector3dVector(results)
     return noisy_model
