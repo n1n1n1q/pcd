@@ -28,7 +28,7 @@ def plane_projection(points, size):
             _, idx = tree.query([x, y])
             grid[i, j] = points[idx, 2]
 
-    return grid
+    return grid, grid_x, grid_y
 
 
 def fourier_filter(grid, filter_func, *args):
@@ -43,3 +43,39 @@ def gaussian_f(grid, sigma):
     y = np.linspace(-0.5, 0.5, grid.shape[1])
     X, Y = np.meshgrid(x, y)
     return np.exp(-(X**2 + Y**2) / (2 * sigma**2))
+
+def icp(points, target, max_iter=50, max_error=1e-6):
+    target_tree = KDTree(target[:, :2])
+    prev_error = float("inf")
+    R_total = np.eye(3)
+    t_total = np.zeros(3)
+    
+    for _ in range(max_iter):
+        _, idx = target_tree.query(points[:, :2])
+        closest_points = target[idx]
+
+        mu_src = np.mean(points, axis=0)
+        mu_target = np.mean(closest_points, axis=0)
+
+        src_centered = points - mu_src
+        target_centered = closest_points - mu_target
+
+        H = src_centered.T @ target_centered
+        U, _, Vt = np.linalg.svd(H)
+        R = Vt.T @ U.T
+
+        if np.linalg.det(R) < 0:
+            Vt[-1, :] *= -1
+            R = Vt.T @ U.T
+        
+        t = mu_target - R @ mu_src
+        source = (R @ source.T).T + t
+        R_total = R @ R_total
+        t_total = R @ t_total + t
+
+        mean_error = np.mean(np.linalg.norm(closest_points - source, axis=1))
+        if abs(prev_error - mean_error) < max_error:
+            break
+        prev_error = mean_error
+    
+    return source, R_total, t_total

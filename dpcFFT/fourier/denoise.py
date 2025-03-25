@@ -1,20 +1,25 @@
 """ """
 
 import numpy as np
-from utils import (
+from open3d.cpu.pybind.geometry import PointCloud
+from dpcFFT.fourier.utils import (
     compute_coordinate_system,
     plane_projection,
     fourier_filter,
     gaussian_f,
+    icp,
+    reconstruct,
 )
+from dpcFFT.data_processor.data import pointcloud
+
 
 
 def denoise_multi(pc1, pc2):
     """
     Denoise and merge two point clouds.
     """
-    pc1_points = np.asarray(pc1.points)
-    pc2_points = np.asarray(pc2.points)
+    pc1_points = np.asarray(pc1.points, dtype=np.float64)
+    pc2_points = np.asarray(pc2.points, dtype=np.float64)
 
     e1, mu1 = compute_coordinate_system(pc1_points)
     e2, mu2 = compute_coordinate_system(pc2_points)
@@ -28,7 +33,7 @@ def denoise_multi(pc1, pc2):
     filtered1 = fourier_filter(projected1, gaussian_f, 0.1)
     filtered2 = fourier_filter(projected2, gaussian_f, 0.1)
 
-    return icp(filtered1, filtered2)
+    return pointcloud(icp(filtered1, filtered2))
 
 
 def denoise_single(pc):
@@ -37,6 +42,7 @@ def denoise_single(pc):
     """
     points = np.asarray(pc.points)
     e, mu = compute_coordinate_system(points)
-    projected = plane_projection(points, 100)
-
-    return projected
+    projected, grid_x, grid_y = plane_projection(points, 100)
+    filtered = fourier_filter(projected, gaussian_f, 0.1)
+    result = icp(points, filtered)
+    return pointcloud(result)
