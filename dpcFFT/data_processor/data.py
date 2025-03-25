@@ -1,9 +1,11 @@
 """
 Data manipulation module
 """
+
 import open3d as o3d
 import numpy as np
 from open3d.cpu.pybind.geometry import PointCloud
+
 
 def load(file_path: str, sample: bool = False, sample_size: float = 0.05) -> PointCloud:
     """
@@ -14,6 +16,7 @@ def load(file_path: str, sample: bool = False, sample_size: float = 0.05) -> Poi
         model = model.voxel_down_sample(voxel_size=sample_size)
     return model
 
+
 def save(file_path: str, model: PointCloud) -> None:
     """
     Save an Open3D point cloud to a PLY file.
@@ -23,7 +26,10 @@ def save(file_path: str, model: PointCloud) -> None:
     except Exception as e:
         print(f"Error saving point cloud to {file_path}: {e}")
 
-def add_noise(model: PointCloud, noise_level: float, noise_extra_level: float) -> PointCloud:
+
+def add_noise(
+    model: PointCloud, noise_level: float, noise_extra_level: float
+) -> PointCloud:
     """
     Noise the point cloud by adding extra points.
     """
@@ -33,12 +39,39 @@ def add_noise(model: PointCloud, noise_level: float, noise_extra_level: float) -
     n = np.random.choice(points.shape[0], size=noise_size, replace=True)
     n = points[n]
     results = np.concatenate((points, n + noise), axis=0)
-    noisy_model = o3d.geometry.PointCloud()
-    noisy_model.points = o3d.utility.Vector3dVector(results)
+    noisy_model = pointcloud(results)
     return noisy_model
+
 
 def sample(model: PointCloud, sample_size: float) -> PointCloud:
     """
     Sample the point cloud by downsampling.
     """
     return model.voxel_down_sample(voxel_size=sample_size)
+
+
+def split(model: PointCloud) -> tuple[PointCloud, PointCloud]:
+    """
+    Split the point cloud into two halves.
+    """
+    points = np.asarray(model.points)
+    min_z = np.min(points[:, 2])
+    max_z = np.max(points[:, 2])
+    threshold = min_z + (max_z - min_z) / 2
+
+    lower_half_mask = points[:, 2] <= threshold
+    upper_half_mask = points[:, 2] > threshold
+
+    points1 = points[lower_half_mask]
+    points2 = points[upper_half_mask]
+
+    return pointcloud(points1), pointcloud(points2)
+
+
+def pointcloud(points: np.ndarray) -> PointCloud:
+    """
+    Create an Open3D point cloud from a NumPy array.
+    """
+    model = o3d.geometry.PointCloud()
+    model.points = o3d.utility.Vector3dVector(points)
+    return model
