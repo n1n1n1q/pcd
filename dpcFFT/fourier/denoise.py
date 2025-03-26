@@ -1,14 +1,19 @@
 """ """
 
+import open3d as o3d
 import numpy as np
-from open3d.cpu.pybind.geometry import PointCloud
+
+if o3d.core.cuda.is_available():
+    from open3d.cuda.pybind.geometry import PointCloud
+else:
+    from open3d.cpu.pybind.geometry import PointCloud
+
 from dpcFFT.fourier.utils import (
     compute_coordinate_system,
     plane_projection,
     fourier_filter,
     gaussian_f,
     icp,
-    reconstruct,
 )
 from dpcFFT.data_processor.data import pointcloud
 
@@ -44,5 +49,4 @@ def denoise_single(pc):
     e, mu = compute_coordinate_system(points)
     projected, grid_x, grid_y = plane_projection(points, 100)
     filtered = fourier_filter(projected, gaussian_f, 0.1)
-    result = icp(points, filtered)
-    return pointcloud(result)
+    return pointcloud(filtered)

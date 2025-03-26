@@ -4,7 +4,11 @@ Data manipulation module
 
 import open3d as o3d
 import numpy as np
-from open3d.cpu.pybind.geometry import PointCloud
+
+if o3d.core.cuda.is_available():
+    from open3d.cuda.pybind.geometry import PointCloud
+else:
+    from open3d.cpu.pybind.geometry import PointCloud
 
 
 def load(file_path: str, sample: bool = False, sample_size: float = 0.05) -> PointCloud:
@@ -43,6 +47,15 @@ def add_noise(
     return noisy_model
 
 
+def add_gaussian_noise(pcd: PointCloud, scale: float) -> PointCloud:
+    """
+    Add gaussian noise to the point cloud
+    """
+    points = np.array(pcd.points)
+    pcd.points = o3d.utility.Vector3dVector(points + np.random.normal(loc=0, scale=0.01, size=points.shape))
+    return pcd
+
+
 def sample(model: PointCloud, sample_size: float) -> PointCloud:
     """
     Sample the point cloud by downsampling.
@@ -75,3 +88,17 @@ def pointcloud(points: np.ndarray) -> PointCloud:
     model = o3d.geometry.PointCloud()
     model.points = o3d.utility.Vector3dVector(points)
     return model
+
+
+def visualise_pcd(pcd: PointCloud) -> None:
+    """
+    Visualize point cloud.
+    """
+    o3d.visualization.draw_geometries([pcd])
+
+
+def visualise_pcds(*pcds: PointCloud) -> None:
+    """
+    Visualize multiple point clouds.
+    """
+    o3d.visualization.draw_geometries(pcds)
