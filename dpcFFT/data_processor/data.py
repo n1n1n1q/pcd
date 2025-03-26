@@ -39,7 +39,9 @@ def add_noise(
     """
     points = np.asarray(model.points)
     noise_size = int(points.shape[0] * noise_extra_level)
-    noise = np.random.normal(0, noise_level, (noise_size, 3))
+    z_noise = np.random.normal(0, noise_level, noise_size)
+    noise = np.zeros((noise_size, 3))
+    noise[:, 2] = z_noise
     n = np.random.choice(points.shape[0], size=noise_size, replace=True)
     n = points[n]
     results = np.concatenate((points, n + noise), axis=0)
@@ -64,14 +66,14 @@ def sample(model: PointCloud, sample_size: float) -> PointCloud:
     return model.voxel_down_sample(voxel_size=sample_size)
 
 
-def split(model: PointCloud) -> tuple[PointCloud, PointCloud]:
+def split(model: PointCloud, frac: float = 0.5) -> tuple[PointCloud, PointCloud]:
     """
     Split the point cloud into two halves.
     """
     points = np.asarray(model.points)
     min_z = np.min(points[:, 2])
     max_z = np.max(points[:, 2])
-    threshold = min_z + (max_z - min_z) / 2
+    threshold = min_z + (max_z - min_z) * frac
 
     lower_half_mask = points[:, 2] <= threshold
     upper_half_mask = points[:, 2] > threshold
