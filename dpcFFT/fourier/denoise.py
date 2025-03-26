@@ -14,6 +14,7 @@ from dpcFFT.fourier.utils import (
     fourier_filter,
     gaussian_f,
     icp,
+    grid_to_points,
 )
 from dpcFFT.data_processor.data import pointcloud
 
@@ -32,13 +33,18 @@ def denoise_multi(pc1, pc2):
     points1_local = (pc1_points - mu1) @ e1.T
     points2_local = (pc2_points - mu2) @ e2.T
 
-    projected1 = plane_projection(points1_local, 100)
-    projected2 = plane_projection(points2_local, 100)
+    projected1, grid_x1, grid_y1 = plane_projection(points1_local, 100)
+    projected2, grid_x2, grid_y2 = plane_projection(points2_local, 100)
 
     filtered1 = fourier_filter(projected1, gaussian_f, 0.1)
     filtered2 = fourier_filter(projected2, gaussian_f, 0.1)
 
-    return pointcloud(icp(filtered1, filtered2))
+    new_pc1_points = grid_to_points(filtered1, grid_x1, grid_y1)
+    new_pc2_points = grid_to_points(filtered2, grid_x2, grid_y2)
+
+
+    transformed, _, _ = icp(new_pc1_points, new_pc2_points)
+    return pointcloud(transformed)
 
 
 def denoise_single(pc):
@@ -47,6 +53,9 @@ def denoise_single(pc):
     """
     points = np.asarray(pc.points)
     e, mu = compute_coordinate_system(points)
-    projected, grid_x, grid_y = plane_projection(points, 100)
+    points_local = (points - mu) @ e.T
+    projected, grid_x, grid_y = plane_projection(points_local, 100)
     filtered = fourier_filter(projected, gaussian_f, 0.1)
-    return pointcloud(filtered)
+    grid_points = grid_to_points(filtered, grid_x, grid_y)
+    transformed, _, _ = icp(points, grid_points)
+    return pointcloud(transformed)

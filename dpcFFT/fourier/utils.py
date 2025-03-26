@@ -11,6 +11,8 @@ def compute_coordinate_system(points):
     points = points - mean
     covariance = np.cov(points.T)
     vals, vectors = np.linalg.eigh(covariance)
+    idx = np.argsort(vals)[::-1]
+    vectors = vectors[:, idx]
     return vectors.T, mean
 
 
@@ -44,14 +46,21 @@ def gaussian_f(grid, sigma):
     X, Y = np.meshgrid(x, y)
     return np.exp(-(X**2 + Y**2) / (2 * sigma**2))
 
+
+def grid_to_points(grid, grid_x, grid_y):
+    X, Y = np.meshgrid(grid_x, grid_y, indexing="ij")
+    points = np.column_stack([X.flatten(), Y.flatten(), grid.flatten()])
+    return points
+
+
 def icp(points, target, max_iter=50, max_error=1e-6):
-    target_tree = KDTree(target[:, :2])
+    target_tree = KDTree(target)
     prev_error = float("inf")
     R_total = np.eye(3)
     t_total = np.zeros(3)
     
     for _ in range(max_iter):
-        _, idx = target_tree.query(points[:, :2])
+        _, idx = target_tree.query(points)
         closest_points = target[idx]
 
         mu_src = np.mean(points, axis=0)
@@ -69,13 +78,13 @@ def icp(points, target, max_iter=50, max_error=1e-6):
             R = Vt.T @ U.T
         
         t = mu_target - R @ mu_src
-        source = (R @ source.T).T + t
+        points = (R @ points.T).T + t
         R_total = R @ R_total
         t_total = R @ t_total + t
 
-        mean_error = np.mean(np.linalg.norm(closest_points - source, axis=1))
+        mean_error = np.mean(np.linalg.norm(closest_points - points, axis=1))
         if abs(prev_error - mean_error) < max_error:
             break
         prev_error = mean_error
     
-    return source, R_total, t_total
+    return points, R_total, t_total
