@@ -11,6 +11,8 @@ def compute_coordinate_system(points):
     points = points - mean
     covariance = np.cov(points.T)
     vals, vectors = np.linalg.eigh(covariance)
+    idx = np.argsort(vals)[::-1]
+    vectors = vectors[:, idx]
     return vectors.T, mean
 
 
@@ -52,13 +54,13 @@ def grid_to_points(grid, grid_x, grid_y):
 
 
 def icp(points, target, max_iter=50, max_error=1e-6):
-    target_tree = KDTree(target[:, :2])
+    target_tree = KDTree(target)
     prev_error = float("inf")
     R_total = np.eye(3)
     t_total = np.zeros(3)
     
     for _ in range(max_iter):
-        _, idx = target_tree.query(points[:, :2])
+        _, idx = target_tree.query(points)
         closest_points = target[idx]
 
         mu_src = np.mean(points, axis=0)
