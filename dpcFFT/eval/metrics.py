@@ -18,5 +18,3 @@ def hausdorff_distance(pcd1, pcd2):
     d1 = directed_hausdorff(X, Y)[0]
     d2 = directed_hausdorff(Y, X)[0]
     return max(d1, d2)
-
-

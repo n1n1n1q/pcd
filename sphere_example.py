@@ -8,7 +8,7 @@ from dpcFFT.misc.misc import sphere
 from dpcFFT.data_processor.data import split, add_noise
 from dpcFFT.fourier.denoise import denoise_single
 
-if __name__=="__main__":
+if __name__ == "__main__":
     model = sphere()
     print("=== Split cloud ===")
     pc1, pc2 = split(model)

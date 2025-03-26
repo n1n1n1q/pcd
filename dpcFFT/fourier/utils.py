@@ -21,7 +21,9 @@ def compute_coordinate_system(points):
 def plane_projection(points, size):
     min_ = np.min(points, axis=0)
     max_ = np.max(points, axis=0)
-    grid_x, grid_y = np.linspace(min_[0], max_[0], size), np.linspace(min_[1], max_[1], size)
+    grid_x, grid_y = np.linspace(min_[0], max_[0], size), np.linspace(
+        min_[1], max_[1], size
+    )
     sampled_points = []
 
     grid = np.zeros((size, size))
@@ -49,7 +51,7 @@ def fourier_filter(height, filter_func, *args):
 
     for i in range(rows):
         for j in range(cols):
-            distance = np.sqrt((i - center_row)**2 + (j - center_col)**2)
+            distance = np.sqrt((i - center_row) ** 2 + (j - center_col) ** 2)
             if distance <= 20:
                 mask[i, j] = 1
 
@@ -59,6 +61,7 @@ def fourier_filter(height, filter_func, *args):
     filtered_heights = np.fft.ifft2(fft_inverse_shifted).real
 
     return filtered_heights
+
 
 def gaussian_f(grid, sigma):
     x = np.linspace(-0.5, 0.5, grid.shape[0])
@@ -91,7 +94,7 @@ def icp(points, target, max_iter=50, max_error=1e-6):
     prev_error = float("inf")
     R_total = np.eye(3)
     t_total = np.zeros(3)
-    
+
     for _ in range(max_iter):
         _, idx = target_tree.query(points)
         closest_points = target[idx]
@@ -109,7 +112,7 @@ def icp(points, target, max_iter=50, max_error=1e-6):
         if np.linalg.det(R) < 0:
             Vt[-1, :] *= -1
             R = Vt.T @ U.T
-        
+
         t = mu_target - R @ mu_src
         points = (R @ points.T).T + t
         R_total = R @ R_total
@@ -119,5 +122,5 @@ def icp(points, target, max_iter=50, max_error=1e-6):
         if abs(prev_error - mean_error) < max_error:
             break
         prev_error = mean_error
-    
+
     return points, R_total, t_total

@@ -5,6 +5,7 @@ Miscalelaneous functions
 import open3d as o3d
 import numpy as np
 
+
 def sphere(n: int = 100000):
     """
     Create a point cloud of a sphere.

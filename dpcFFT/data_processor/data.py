@@ -55,7 +55,9 @@ def add_gaussian_noise(pcd: PointCloud, scale: float) -> PointCloud:
     """
     points = np.array(pcd.points).copy()
     pcd = PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(points + np.random.normal(loc=0, scale=scale, size=points.shape))
+    pcd.points = o3d.utility.Vector3dVector(
+        points + np.random.normal(loc=0, scale=scale, size=points.shape)
+    )
     return pcd
 
 
