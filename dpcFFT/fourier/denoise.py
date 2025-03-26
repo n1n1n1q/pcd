@@ -15,6 +15,7 @@ from dpcFFT.fourier.utils import (
     gaussian_f,
     icp,
     grid_to_points,
+    filter_fourier_artifacts
 )
 from dpcFFT.data_processor.data import pointcloud
 
@@ -59,3 +60,12 @@ def denoise_single(pc):
     grid_points = grid_to_points(filtered, grid_x, grid_y)
     transformed, _, _ = icp(points, grid_points)
     return pointcloud(transformed)
+
+
+def bug_denoise_single(pc):
+    points = np.asarray(pc.points)
+    height, grid_x, grid_y, sampled_points = plane_projection(points, 500)
+    filtered_heights = fourier_filter(height, gaussian_f, 0.01)
+    grid_points = grid_to_points(filtered_heights, grid_x, grid_y)
+    grid_points = filter_fourier_artifacts(sampled_points, grid_points)
+    return pointcloud(grid_points)
