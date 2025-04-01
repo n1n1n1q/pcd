@@ -4,9 +4,9 @@ Sphere example -- temporary file for tetsing
 
 import open3d as o3d
 import numpy as np
-from dpcFFT.misc.misc import sphere
-from dpcFFT.data_processor.data import split, add_noise
-from dpcFFT.fourier.denoise import denoise_single
+from pcd.misc.misc import sphere
+from pcd.data_processor.data import split, add_noise
+from pcd.fourier.denoise import denoise_single
 
 if __name__ == "__main__":
     model = sphere()

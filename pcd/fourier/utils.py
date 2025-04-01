@@ -1,17 +1,19 @@
 """
-Fourier utils
+Fourier utils for point cloud denoising
 """
 
 import numpy as np
 from scipy.spatial import KDTree
 from scipy.spatial import ConvexHull
+from scipy.fft import fft2, ifft2, fftshift, ifftshift
 from shapely.geometry import Point, Polygon
+import open3d as o3d
 
 
 def compute_coordinate_system(points):
     mean = np.mean(points, axis=0)
-    points = points - mean
-    covariance = np.cov(points.T)
+    centered_points = points - mean
+    covariance = np.cov(centered_points.T)
     vals, vectors = np.linalg.eigh(covariance)
     idx = np.argsort(vals)[::-1]
     vectors = vectors[:, idx]
@@ -21,11 +23,8 @@ def compute_coordinate_system(points):
 def plane_projection(points, size):
     min_ = np.min(points, axis=0)
     max_ = np.max(points, axis=0)
-    grid_x, grid_y = np.linspace(min_[0], max_[0], size), np.linspace(
-        min_[1], max_[1], size
-    )
-    sampled_points = []
-
+    grid_x, grid_y = np.linspace(min_[0], max_[0], size), np.linspace(min_[1], max_[1], size)
+    
     grid = np.zeros((size, size))
 
     tree = KDTree(points[:, :2])
@@ -40,34 +39,26 @@ def plane_projection(points, size):
     return grid, grid_x, grid_y, sampled_points
 
 
-def fourier_filter(height, filter_func, *args):
-    fft_height = np.fft.fft2(height)
-    fft_shifted = np.fft.fftshift(fft_height)
+def fourier_filter(height, radius=20):
+    fft_height = fft2(height)
+    fft_shifted = fftshift(fft_height)
 
     rows, cols = fft_shifted.shape
     center_row, center_col = rows // 2, cols // 2
 
     mask = np.zeros((rows, cols))
-
     for i in range(rows):
         for j in range(cols):
             distance = np.sqrt((i - center_row) ** 2 + (j - center_col) ** 2)
-            if distance <= 20:
+            if distance <= radius:
                 mask[i, j] = 1
 
     fft_filtered = fft_shifted * mask
 
-    fft_inverse_shifted = np.fft.ifftshift(fft_filtered)  # Shift back
-    filtered_heights = np.fft.ifft2(fft_inverse_shifted).real
+    fft_inverse_shifted = ifftshift(fft_filtered)
+    filtered_heights = ifft2(fft_inverse_shifted).real
 
     return filtered_heights
-
-
-def gaussian_f(grid, sigma):
-    x = np.linspace(-0.5, 0.5, grid.shape[0])
-    y = np.linspace(-0.5, 0.5, grid.shape[1])
-    X, Y = np.meshgrid(x, y)
-    return np.exp(-(X**2 + Y**2) / (2 * sigma**2))
 
 
 def grid_to_points(grid, grid_x, grid_y):
@@ -81,11 +72,10 @@ def filter_fourier_artifacts(sampled_points, grid_points):
     hull_points = sampled_points[hull.vertices]
     polygon = Polygon(hull_points)
 
-    filtered_points = []
-    for point in grid_points:
-        point_ = Point(*point[:2])
-        if polygon.contains(point_):
-            filtered_points.append(point)
+    filtered_points = [
+        point for point in grid_points 
+        if polygon.contains(Point(*point[:2]))
+    ]
     return np.asarray(filtered_points)
 
 

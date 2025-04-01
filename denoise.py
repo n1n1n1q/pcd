@@ -3,7 +3,7 @@ Denoising script for point clouds
 """
 
 import argparse
-import dpcFFT.data_processor.data as dpd
+import pcd.data_processor.data as dpd
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Point cloud denoising script")
