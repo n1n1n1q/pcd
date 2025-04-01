@@ -23,8 +23,10 @@ def compute_coordinate_system(points):
 def plane_projection(points, size):
     min_ = np.min(points, axis=0)
     max_ = np.max(points, axis=0)
-    grid_x, grid_y = np.linspace(min_[0], max_[0], size), np.linspace(min_[1], max_[1], size)
-    
+    grid_x, grid_y = np.linspace(min_[0], max_[0], size), np.linspace(
+        min_[1], max_[1], size
+    )
+
     grid = np.zeros((size, size))
 
     tree = KDTree(points[:, :2])
@@ -73,8 +75,7 @@ def filter_fourier_artifacts(sampled_points, grid_points):
     polygon = Polygon(hull_points)
 
     filtered_points = [
-        point for point in grid_points 
-        if polygon.contains(Point(*point[:2]))
+        point for point in grid_points if polygon.contains(Point(*point[:2]))
     ]
     return np.asarray(filtered_points)
 

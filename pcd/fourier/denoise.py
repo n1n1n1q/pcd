@@ -41,6 +41,7 @@ def denoise_multi(pc1, pc2):
     transformed, _, _ = icp(new_pc1_points, new_pc2_points)
     return o3d.geometry.PointCloud(o3d.utility.Vector3dVector(transformed))
 
+
 def denoise_single(pc):
     points = np.asarray(pc.points)
     height, grid_x, grid_y, sampled_points = plane_projection(points, 100)
