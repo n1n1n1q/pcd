@@ -22,6 +22,7 @@ def fit_quadratic(pcd):
     return coeffs
 
 
+
 def denoise(pcd):
     """
     Denoise the point cloud data using regression
@@ -39,3 +40,6 @@ def denoise(pcd):
         )
         new_points.append([x, y, z_new])
     return pointcloud(np.array(new_points))
+
+
+
