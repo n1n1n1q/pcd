@@ -12,9 +12,8 @@ from pcd.data_processor.data import (
     add_noise,
 )
 from pcd.pipeline.denoise import local_denoise
-from pcd.regressor.regressor import denoise
+from pcd.regressor.regressor import denoise_ls
 
-# Number of regions for local denoising
 n = 5
 
 
@@ -31,7 +30,9 @@ def main() -> NoReturn:
     upper_sphere = pointcloud(np.asarray(upper_sphere.points) + np.array([0, 0, 1]))
     noised_upper_sphere = add_noise(upper_sphere, 0.1, 0.1)
     visualise_pcds(noised_upper_sphere)
-    denoised = local_denoise(noised_upper_sphere, n=5, denoise_function=denoise)
+    denoised = local_denoise(
+        noised_upper_sphere, n=5, denoise_function=denoise_ls, basis_function="pca"
+    )
     visualise_pcds(denoised)
 
 

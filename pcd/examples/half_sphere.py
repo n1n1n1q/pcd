@@ -12,7 +12,7 @@ from pcd.data_processor.data import (
     pointcloud,
     add_noise,
 )
-from pcd.fourier.denoise import denoise_single
+from pcd.fourier.denoise import denoise_fft
 
 
 def main() -> NoReturn:

@@ -4,7 +4,6 @@ Fourier-transform based denoising for point clouds
 
 import open3d as o3d
 import numpy as np
-from typing import Union
 
 from pcd.fourier.utils import (
     plane_projection,
@@ -19,7 +18,7 @@ else:
     from open3d.cpu.pybind.geometry import PointCloud
 
 
-def denoise_single(pc: PointCloud) -> PointCloud:
+def denoise_fft(pc: PointCloud) -> PointCloud:
     """
     Denoise a point cloud using Fourier-transform based filtering.
 

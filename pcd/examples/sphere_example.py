@@ -7,7 +7,7 @@ import numpy as np
 from typing import NoReturn
 from pcd.misc.misc import sphere
 from pcd.data_processor.data import split, add_noise
-from pcd.fourier.denoise import denoise_single
+from pcd.fourier.denoise import denoise_fft
 
 
 def main() -> NoReturn:
@@ -25,7 +25,7 @@ def main() -> NoReturn:
     noisy_pc1 = add_noise(pc1, 0.1, 0.1)
     o3d.visualization.draw_geometries([noisy_pc1])
     print("=== Denoised cloud ===")
-    denoised_pc1 = denoise_single(noisy_pc1)
+    denoised_pc1 = denoise_fft(noisy_pc1)
     o3d.visualization.draw_geometries([denoised_pc1])
 
 

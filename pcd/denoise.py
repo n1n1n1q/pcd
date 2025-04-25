@@ -6,8 +6,8 @@ import argparse
 import time
 import pcd.data_processor.data as dpd
 from pcd.pipeline.denoise import local_denoise
-from pcd.regressor.regressor import denoise
-from pcd.fourier.denoise import denoise_single
+from pcd.regressor.regressor import denoise_ls
+from pcd.fourier.denoise import denoise_fft
 from pcd.eval.metrics import chamfer_distance, hausdorff_distance
 
 if __name__ == "__main__":
@@ -45,9 +45,9 @@ if __name__ == "__main__":
     print(f"Time taken to load point cloud: {time.time() - start_time:.2f} seconds")
 
     if args.approach == "fft":
-        denoise_function = denoise_single
+        denoise_function = denoise_fft
     elif args.approach == "ls":
-        denoise_function = denoise
+        denoise_function = denoise_ls
     else:
         raise ValueError("Invalid denoising function specified")
 

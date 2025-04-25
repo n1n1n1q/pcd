@@ -12,7 +12,7 @@ from pcd.data_processor.data import (
     pointcloud,
     add_noise,
 )
-from pcd.regressor.regressor import denoise
+from pcd.regressor.regressor import denoise_ls
 
 
 def main() -> NoReturn:
@@ -26,7 +26,7 @@ def main() -> NoReturn:
     upper_sphere, lower_sphere = split(sphere_pcd)
     upper_sphere = pointcloud(np.asarray(upper_sphere.points) + np.array([0, 0, 1]))
     noised_upper_sphere = add_noise(upper_sphere, 0.1, 0.1)
-    denoised = denoise(noised_upper_sphere)
+    denoised = denoise_ls(noised_upper_sphere)
     visualise_pcds(denoised)
 
 

@@ -2,6 +2,7 @@ import numpy as np
 import open3d as o3d
 from typing import Tuple, Callable, List, Optional
 from pcd.data_processor.data import pointcloud
+from pcd.pipeline.utils import get_orthogonal_basis_regression, get_orthogonal_basis_pca
 
 if o3d.core.cuda.is_available():
     from open3d.cuda.pybind.geometry import PointCloud
@@ -9,54 +10,10 @@ else:
     from open3d.cpu.pybind.geometry import PointCloud
 
 
-def fit_plane(pcd: PointCloud) -> np.ndarray:
-    """
-    Fit a plane to the point cloud data.
-
-    Args:
-        pcd: Input point cloud
-
-    Returns:
-        np.ndarray: Coefficients [a, b, c] of the plane equation z = a*x + b*y + c
-    """
-    X = []
-    Y = []
-    for x, y, z in pcd.points:
-        X.append([x, y, 1])
-        Y.append(z)
-    X = np.array(X)
-    Y = np.array(Y)
-    coefficients = np.linalg.lstsq(X, Y, rcond=None)[0]
-    return coefficients
-
-
-def get_orthogonal_basis(v1: np.ndarray) -> np.ndarray:
-    """
-    Compute an orthogonal basis where v1 is one of the basis vectors.
-
-    Args:
-        v1: Input vector to include in the basis
-
-    Returns:
-        np.ndarray: 3x3 matrix where columns are orthogonal unit vectors forming a basis,
-                    with the last column being the normalized v1
-    """
-    if v1[0] != 0 or v1[1] != 0:
-        v2 = np.array([-v1[1], v1[0], 0])
-    else:
-        v2 = np.array([0, -v1[2], v1[1]])
-
-    v3 = np.cross(v1, v2)
-
-    v1 /= np.linalg.norm(v1)
-    v2 /= np.linalg.norm(v2)
-    v3 /= np.linalg.norm(v3)
-
-    return np.column_stack((v2, v3, v1))
-
-
 def change_of_basis_denoise(
-    pcd: PointCloud, denoise_function: Callable[[PointCloud], PointCloud]
+    pcd: PointCloud,
+    denoise_function: Callable[[PointCloud], PointCloud],
+    basis_function: Optional[Callable[[PointCloud], np.ndarray]],
 ) -> PointCloud:
     """
     Denoise a point cloud by changing basis, applying denoising, then transforming back.
@@ -68,15 +25,9 @@ def change_of_basis_denoise(
     Returns:
         PointCloud: Denoised point cloud
     """
-    points = np.asarray(pcd.points)
-
-    coeffs = fit_plane(pcd)
-    a, b, _ = coeffs
-
-    normal_vector = np.array([a, b, -1])
-    new_basis = get_orthogonal_basis(normal_vector)
+    new_basis = basis_function(pcd)
     transition_marix = new_basis.T
-
+    points = np.asarray(pcd.points)
     for i, v in enumerate(points):
         points[i] = transition_marix @ v
 
@@ -91,7 +42,10 @@ def change_of_basis_denoise(
 
 
 def local_denoise(
-    pcd: PointCloud, n: int, denoise_function: Callable[[PointCloud], PointCloud]
+    pcd: PointCloud,
+    n: int,
+    denoise_function: Callable[[PointCloud], PointCloud],
+    basis_function: str = "regression",
 ) -> PointCloud:
     """
     Apply denoising locally by dividing the point cloud into n×n regions.
@@ -104,6 +58,14 @@ def local_denoise(
     Returns:
         PointCloud: Denoised point cloud
     """
+    match basis_function:
+        case "regression":
+            basis_function = get_orthogonal_basis_regression
+        case "pca":
+            basis_function = get_orthogonal_basis_pca
+        case _:
+            raise ValueError("Invalid basis function. Use 'regression' or 'pca'.")
+
     denoised_points = None
     points = np.asarray(pcd.points)
 
@@ -140,7 +102,9 @@ def local_denoise(
 
         if filtered_points.shape[0] > 0:
             denoised_pcd = change_of_basis_denoise(
-                pointcloud(filtered_points), denoise_function=denoise_function
+                pointcloud(filtered_points),
+                denoise_function=denoise_function,
+                basis_function=basis_function,
             )
 
             if denoised_points is None:

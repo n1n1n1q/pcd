@@ -3,7 +3,6 @@ Denoising with regression
 """
 
 import numpy as np
-import open3d as o3d
 from pcd.data_processor.data import pointcloud, PointCloud
 
 
@@ -29,20 +28,21 @@ def fit_quadratic(pcd: PointCloud) -> np.ndarray:
     return coeffs
 
 
-def denoise(pcd: PointCloud) -> PointCloud:
+def denoise_ls(pcd: PointCloud, threshold: float = 0.01) -> PointCloud:
     """
-    Denoise the point cloud data using quadratic regression.
+    Denoise the point cloud data by filtering points based on their distance from the fitted quadratic surface.
 
     Args:
         pcd: Input point cloud with noise
+        threshold: Maximum allowed distance from the fitted surface (default: 0.01)
 
     Returns:
-        PointCloud: Denoised point cloud where z-coordinates are fitted to a quadratic surface
+        PointCloud: Denoised point cloud with outlier points removed
     """
     coeffs = fit_quadratic(pcd)
-    new_points = []
-    for x, y, _ in pcd.points:
-        z_new = (
+    filtered_points = []
+    for x, y, z in pcd.points:
+        z_fit = (
             coeffs[0] * x**2
             + coeffs[1] * y**2
             + coeffs[2] * x * y
@@ -50,5 +50,10 @@ def denoise(pcd: PointCloud) -> PointCloud:
             + coeffs[4] * y
             + coeffs[5]
         )
-        new_points.append([x, y, z_new])
-    return pointcloud(np.array(new_points))
+
+        distance = abs(z - z_fit)
+        if distance <= threshold:
+            filtered_points.append([x, y, z])
+        else:
+            filtered_points.append([x, y, z_fit])
+    return pointcloud(np.array(filtered_points))
