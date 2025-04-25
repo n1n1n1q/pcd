@@ -31,14 +31,14 @@ def fit_plane(pcd: PointCloud) -> np.ndarray:
 
 def get_orthogonal_basis_regression(pcd: PointCloud) -> np.ndarray:
     """
-    Compute an orthogonal basis where v1 is one of the basis vectors.
+    Compute an orthogonal basis where the normal vector of the fitted plane is one of the basis vectors.
 
     Args:
-        v1: Input vector to include in the basis
+        pcd: Input point cloud
 
     Returns:
         np.ndarray: 3x3 matrix where columns are orthogonal unit vectors forming a basis,
-                    with the last column being the normalized v1
+                    with the last column being the normalized normal vector
     """
     coeffs = fit_plane(pcd)
     a, b, _ = coeffs

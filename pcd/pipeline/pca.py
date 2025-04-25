@@ -18,7 +18,7 @@ def power_iteration(
     Args:
         matrix: Input square matrix
         num_iterations: Maximum number of iterations
-        tol: Convergence tolerance
+        epsilon: Convergence tolerance
         initial_vector: Initial guess vector. If None, a random vector is used.
 
     Returns:

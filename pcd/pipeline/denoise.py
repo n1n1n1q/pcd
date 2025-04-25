@@ -21,6 +21,7 @@ def change_of_basis_denoise(
     Args:
         pcd: Input point cloud
         denoise_function: Function that takes a point cloud and returns a denoised point cloud
+        basis_function: Function that computes the new basis for the point cloud
 
     Returns:
         PointCloud: Denoised point cloud
@@ -54,6 +55,7 @@ def local_denoise(
         pcd: Input point cloud
         n: Number of divisions along each axis (resulting in n^2 regions)
         denoise_function: Function that takes a point cloud and returns a denoised point cloud
+        basis_function: Type of basis function to use, either "regression" or "pca"
 
     Returns:
         PointCloud: Denoised point cloud
