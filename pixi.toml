@@ -1,0 +1,20 @@
+[workspace]
+authors = ["Oleh Basystyi <basystyo@gmail.com>"]
+channels = ["conda-forge"]
+name = "pcd"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[dependencies]
+python = ">=3.11,<3.13"
+numpy = "*"
+open3d = "*"
+scipy = "*"
+shapely = "*"
+black = "*"
+
+[tasks]
+example-fft = "python -m pcd.examples.half_sphere"
+example-ls = "python -m pcd.examples.ls_half"
+example-split = "python -m pcd.examples.test_split"
+fix-imports = "cd .. && PYTHONPATH=$PYTHONPATH:$(pwd) python -m pcd.examples.half_sphere"

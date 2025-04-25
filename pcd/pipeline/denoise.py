@@ -1,10 +1,23 @@
 import numpy as np
 import open3d as o3d
+from typing import Tuple, Callable, List, Optional
 from pcd.data_processor.data import pointcloud
 
-def fit_plane(pcd):
+if o3d.core.cuda.is_available():
+    from open3d.cuda.pybind.geometry import PointCloud
+else:
+    from open3d.cpu.pybind.geometry import PointCloud
+
+
+def fit_plane(pcd: PointCloud) -> np.ndarray:
     """
-    Fit plane to the point cloud data
+    Fit a plane to the point cloud data.
+
+    Args:
+        pcd: Input point cloud
+
+    Returns:
+        np.ndarray: Coefficients [a, b, c] of the plane equation z = a*x + b*y + c
     """
     X = []
     Y = []
@@ -17,7 +30,17 @@ def fit_plane(pcd):
     return coefficients
 
 
-def get_orthogonal_basis(v1): 
+def get_orthogonal_basis(v1: np.ndarray) -> np.ndarray:
+    """
+    Compute an orthogonal basis where v1 is one of the basis vectors.
+
+    Args:
+        v1: Input vector to include in the basis
+
+    Returns:
+        np.ndarray: 3x3 matrix where columns are orthogonal unit vectors forming a basis,
+                    with the last column being the normalized v1
+    """
     if v1[0] != 0 or v1[1] != 0:
         v2 = np.array([-v1[1], v1[0], 0])
     else:
@@ -32,7 +55,19 @@ def get_orthogonal_basis(v1):
     return np.column_stack((v2, v3, v1))
 
 
-def change_of_basis_denoise(pcd, denoise_function: callable):
+def change_of_basis_denoise(
+    pcd: PointCloud, denoise_function: Callable[[PointCloud], PointCloud]
+) -> PointCloud:
+    """
+    Denoise a point cloud by changing basis, applying denoising, then transforming back.
+
+    Args:
+        pcd: Input point cloud
+        denoise_function: Function that takes a point cloud and returns a denoised point cloud
+
+    Returns:
+        PointCloud: Denoised point cloud
+    """
     points = np.asarray(pcd.points)
 
     coeffs = fit_plane(pcd)
@@ -55,8 +90,20 @@ def change_of_basis_denoise(pcd, denoise_function: callable):
     return pointcloud(denoised_points)
 
 
-def local_denoise(pcd, n, denoise_function: callable):
+def local_denoise(
+    pcd: PointCloud, n: int, denoise_function: Callable[[PointCloud], PointCloud]
+) -> PointCloud:
+    """
+    Apply denoising locally by dividing the point cloud into n×n regions.
 
+    Args:
+        pcd: Input point cloud
+        n: Number of divisions along each axis (resulting in n^2 regions)
+        denoise_function: Function that takes a point cloud and returns a denoised point cloud
+
+    Returns:
+        PointCloud: Denoised point cloud
+    """
     denoised_points = None
     points = np.asarray(pcd.points)
 
@@ -69,7 +116,7 @@ def local_denoise(pcd, n, denoise_function: callable):
     dx = (x_max - x_min) / n
     dy = (y_max - y_min) / n
 
-    chunks_bounds = []
+    chunks_bounds: List[Tuple[Tuple[float, float], Tuple[float, float]]] = []
 
     for i in range(n):
         for j in range(n):
@@ -79,22 +126,28 @@ def local_denoise(pcd, n, denoise_function: callable):
             x_end = x_min + (i + 1) * dx
             y_end = y_min + (j + 1) * dy
 
-            chunks_bounds.append( ((x_start, y_start), (x_end, y_end)) )
+            chunks_bounds.append(((x_start, y_start), (x_end, y_end)))
 
     for chunk in chunks_bounds:
         (x_start, y_start), (x_end, y_end) = chunk
 
         filtered_points = points[
-            (points[:, 0] >= x_start) & (points[:, 0] <= x_end) &  
-            (points[:, 1] >= y_start) & (points[:, 1] <= y_end)
+            (points[:, 0] >= x_start)
+            & (points[:, 0] <= x_end)
+            & (points[:, 1] >= y_start)
+            & (points[:, 1] <= y_end)
         ]
 
-        denoised_pcd = change_of_basis_denoise(pointcloud(filtered_points), denoise_function=denoise_function)
+        if filtered_points.shape[0] > 0:
+            denoised_pcd = change_of_basis_denoise(
+                pointcloud(filtered_points), denoise_function=denoise_function
+            )
 
-        if denoised_points is None:
-            denoised_points = np.asarray(denoised_pcd.points)
-        else:
-            denoised_points = np.vstack((denoised_points, np.asarray(denoised_pcd.points)))
-    
+            if denoised_points is None:
+                denoised_points = np.asarray(denoised_pcd.points)
+            else:
+                denoised_points = np.vstack(
+                    (denoised_points, np.asarray(denoised_pcd.points))
+                )
+
     return pointcloud(denoised_points)
-

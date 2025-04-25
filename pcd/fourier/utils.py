@@ -3,6 +3,7 @@ Fourier utils for point cloud denoising
 """
 
 import numpy as np
+from typing import Tuple, List, Optional
 from scipy.spatial import KDTree
 from scipy.spatial import ConvexHull
 from scipy.fft import fft2, ifft2, fftshift, ifftshift
@@ -10,7 +11,18 @@ from shapely.geometry import Point, Polygon
 import open3d as o3d
 
 
-def compute_coordinate_system(points):
+def compute_coordinate_system(points: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Compute the principal coordinate system for a set of points.
+
+    Args:
+        points: Input points as a numpy array of shape (n, 3)
+
+    Returns:
+        Tuple containing:
+            - vectors: Principal axes as rows of a 3x3 matrix
+            - mean: Center of the point cloud
+    """
     mean = np.mean(points, axis=0)
     centered_points = points - mean
     covariance = np.cov(centered_points.T)
@@ -20,7 +32,23 @@ def compute_coordinate_system(points):
     return vectors.T, mean
 
 
-def plane_projection(points, size):
+def plane_projection(
+    points: np.ndarray, size: int
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Project 3D points onto a regular 2D grid.
+
+    Args:
+        points: Input points as a numpy array of shape (n, 3)
+        size: Grid size (grid will be size x size)
+
+    Returns:
+        Tuple containing:
+            - grid: Height field values as a 2D array
+            - grid_x: X coordinates of the grid
+            - grid_y: Y coordinates of the grid
+            - sampled_points: The 2D points that were sampled
+    """
     min_ = np.min(points, axis=0)
     max_ = np.max(points, axis=0)
     grid_x, grid_y = np.linspace(min_[0], max_[0], size), np.linspace(
@@ -28,6 +56,7 @@ def plane_projection(points, size):
     )
 
     grid = np.zeros((size, size))
+    sampled_points = []
 
     tree = KDTree(points[:, :2])
     for i, x in enumerate(grid_x):
@@ -41,7 +70,17 @@ def plane_projection(points, size):
     return grid, grid_x, grid_y, sampled_points
 
 
-def fourier_filter(height, radius=20):
+def fourier_filter(height: np.ndarray, radius: int = 20) -> np.ndarray:
+    """
+    Apply a low-pass filter in the frequency domain.
+
+    Args:
+        height: Height field as a 2D array
+        radius: Radius of the low-pass filter
+
+    Returns:
+        np.ndarray: Filtered height field
+    """
     fft_height = fft2(height)
     fft_shifted = fftshift(fft_height)
 
@@ -63,13 +102,38 @@ def fourier_filter(height, radius=20):
     return filtered_heights
 
 
-def grid_to_points(grid, grid_x, grid_y):
+def grid_to_points(
+    grid: np.ndarray, grid_x: np.ndarray, grid_y: np.ndarray
+) -> np.ndarray:
+    """
+    Convert a height field grid back to 3D points.
+
+    Args:
+        grid: Height field values as a 2D array
+        grid_x: X coordinates of the grid
+        grid_y: Y coordinates of the grid
+
+    Returns:
+        np.ndarray: 3D points with shape (n, 3)
+    """
     X, Y = np.meshgrid(grid_x, grid_y, indexing="ij")
     points = np.column_stack([X.flatten(), Y.flatten(), grid.flatten()])
     return points
 
 
-def filter_fourier_artifacts(sampled_points, grid_points):
+def filter_fourier_artifacts(
+    sampled_points: np.ndarray, grid_points: np.ndarray
+) -> np.ndarray:
+    """
+    Filter out artifacts outside the convex hull of the original points.
+
+    Args:
+        sampled_points: Original sampled points in 2D
+        grid_points: Reconstructed 3D grid points that may contain artifacts
+
+    Returns:
+        np.ndarray: Filtered 3D points
+    """
     hull = ConvexHull(sampled_points)
     hull_points = sampled_points[hull.vertices]
     polygon = Polygon(hull_points)
@@ -80,7 +144,24 @@ def filter_fourier_artifacts(sampled_points, grid_points):
     return np.asarray(filtered_points)
 
 
-def icp(points, target, max_iter=50, max_error=1e-6):
+def icp(
+    points: np.ndarray, target: np.ndarray, max_iter: int = 50, max_error: float = 1e-6
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Iterative Closest Point algorithm for point cloud registration.
+
+    Args:
+        points: Source points as a numpy array of shape (n, 3)
+        target: Target points as a numpy array of shape (m, 3)
+        max_iter: Maximum number of iterations
+        max_error: Convergence threshold for mean error
+
+    Returns:
+        Tuple containing:
+            - Transformed source points
+            - Rotation matrix
+            - Translation vector
+    """
     target_tree = KDTree(target)
     prev_error = float("inf")
     R_total = np.eye(3)
