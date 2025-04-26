@@ -1,8 +1,8 @@
 import numpy as np
 import open3d as o3d
 from typing import Tuple, Callable, List, Optional
-from pcd.data_processor.data import pointcloud
-from pcd.pipeline.utils import get_orthogonal_basis_regression, get_orthogonal_basis_pca
+from pcd.data_processor.data import pointcloud,visualise_pcd
+from pcd.pipeline.utils import get_orthogonal_basis_regression, get_orthogonal_basis_pca, euclidean_segmentation 
 
 if o3d.core.cuda.is_available():
     from open3d.cuda.pybind.geometry import PointCloud
@@ -39,21 +39,22 @@ def change_of_basis_denoise(
     for i, v in enumerate(denoised_points):
         denoised_points[i] = new_basis @ v
 
-    return pointcloud(denoised_points)
+    return pointcloud(denoised_points, colors=np.asarray(pcd.colors))
 
 
 def local_denoise(
     pcd: PointCloud,
-    n: int,
     denoise_function: Callable[[PointCloud], PointCloud],
     basis_function: str = "regression",
+    distance_threshold: int = 3,
+    step_size: float = 0.2,
+    min_points = 150
 ) -> PointCloud:
     """
     Apply denoising locally by dividing the point cloud into n×n regions.
 
     Args:
         pcd: Input point cloud
-        n: Number of divisions along each axis (resulting in n^2 regions)
         denoise_function: Function that takes a point cloud and returns a denoised point cloud
         basis_function: Type of basis function to use, either "regression" or "pca"
 
@@ -69,51 +70,28 @@ def local_denoise(
             raise ValueError("Invalid basis function. Use 'regression' or 'pca'.")
 
     denoised_points = None
-    points = np.asarray(pcd.points)
+    denoised_colors = None
 
-    min_ = np.min(points, axis=0)
-    max_ = np.max(points, axis=0)
+    segments = euclidean_segmentation(pcd, distance_threshold, min_points, step_size)
 
-    x_min, y_min, _ = min_
-    x_max, y_max, _ = max_
-
-    dx = (x_max - x_min) / n
-    dy = (y_max - y_min) / n
-
-    chunks_bounds: List[Tuple[Tuple[float, float], Tuple[float, float]]] = []
-
-    for i in range(n):
-        for j in range(n):
-            x_start = x_min + i * dx
-            y_start = y_min + j * dy
-
-            x_end = x_min + (i + 1) * dx
-            y_end = y_min + (j + 1) * dy
-
-            chunks_bounds.append(((x_start, y_start), (x_end, y_end)))
-
-    for chunk in chunks_bounds:
-        (x_start, y_start), (x_end, y_end) = chunk
-
-        filtered_points = points[
-            (points[:, 0] >= x_start)
-            & (points[:, 0] <= x_end)
-            & (points[:, 1] >= y_start)
-            & (points[:, 1] <= y_end)
-        ]
+    for segment in segments:
+        filtered_points = np.asarray(segment.points)
 
         if filtered_points.shape[0] > 0:
             denoised_pcd = change_of_basis_denoise(
-                pointcloud(filtered_points),
+                pointcloud(filtered_points, colors=np.asarray(segment.colors)),
                 denoise_function=denoise_function,
                 basis_function=basis_function,
             )
-
             if denoised_points is None:
                 denoised_points = np.asarray(denoised_pcd.points)
+                denoised_colors = np.asarray(denoised_pcd.colors)
             else:
                 denoised_points = np.vstack(
                     (denoised_points, np.asarray(denoised_pcd.points))
                 )
+                denoised_colors = np.vstack(
+                    (denoised_colors, np.asarray(denoised_pcd.colors))
+                )
 
-    return pointcloud(denoised_points)
+    return pointcloud(denoised_points, colors=denoised_colors)
