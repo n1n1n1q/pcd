@@ -61,10 +61,10 @@ See visual comparison:
 ## Future Work
 Although the project is almost finished, there is some work to do.
 
-- [] Tweak FFT denoise
-- [] Prepare a dataset with more models and upload it to GitHub
-- [] Evaluate all the approaches (both global and local)
-- [] Fix some misc functions (save, load etc)
+- [ ] Tweak FFT denoise
+- [ ] Prepare a dataset with more models and upload it to GitHub
+- [ ] Evaluate all the approaches (both global and local)
+- [ ] Fix some misc functions (save, load etc)
 
 ## Authors
 * [Basystyi Oleh](https://github.com/n1n1n1q)
