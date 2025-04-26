@@ -52,7 +52,7 @@ For now, we have tested (global) FFT and local LS approaches. The followin resul
 | Sphere     | Fourier Denoising    | 0.9429             | 0.4005           | 0.58 s         | Denoising with Fourier done|
 
 See visual comparison:
-![Blob comparison](assets/blob_comp.png)
+![](assets/blob_comp.png)
 *Blob denoising comparison*
 
 ![](assets/sphere_comp.png)
