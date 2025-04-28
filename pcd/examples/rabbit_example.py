@@ -20,19 +20,21 @@ if __name__ == "__main__":
             pcd_noised,
             denoise_function=denoise_ls,
             basis_function="pca",
-            distance_threshold=2,
-            step_size=0.1,
+            distance_threshold=3,
+            step_size=0.5,
             locality_threshold=1
         )
 
-    # denoised = local_denoise(
-    #     denoised,
-    #     denoise_function=denoise_ls,
-    #     basis_function="pca",
-    #     distance_threshold=3.2,
-    #     step_size=0.1,
-    #     locality_threshold=1
-    # )
+    denoised = local_denoise(
+        denoised,
+        denoise_function=denoise_ls,
+        basis_function="pca",
+        distance_threshold=4,
+        step_size=0.1,
+        locality_threshold=0.5
+    )
     pcd_noised.translate(np.array([-70, 0, 0]))
     pcd.translate(np.array([70, 0, 0]))
-    visualise_pcds(denoised)
+    visualise_pcds(pcd_noised, denoised, pcd)
+    o3d.io.write_point_cloud("ODB_GANG.ply", denoised)
+

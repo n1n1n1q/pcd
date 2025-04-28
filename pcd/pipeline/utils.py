@@ -123,7 +123,7 @@ def change_of_basis_denoise(
 def get_locality_metric(pcd):
     new_basis = get_orthogonal_basis_pca(pcd)
     transition_marix = new_basis.T
-    points = np.asarray(pcd.points)
+    points = np.asarray(pcd.points).copy()
     for i, v in enumerate(points):
         points[i] = transition_marix @ v
     
@@ -154,13 +154,6 @@ def euclidean_segmentation(
     points = np.asarray(pcd.points)
     colors = np.asarray(pcd.colors)
     pcd_tree = o3d.geometry.KDTreeFlann(pcd)
-    avg_distance = 0
-
-    for point in points:
-        _, _, dist = pcd_tree.search_knn_vector_3d(point, 2)
-        avg_distance += np.sqrt(dist[1])
-
-    avg_distance /= len(points)
 
     segments = []
 
@@ -169,6 +162,7 @@ def euclidean_segmentation(
     while unsegmented_points:
         current_point = random.choice(list(unsegmented_points))
         _, idx, _ = pcd_tree.search_radius_vector_3d(current_point, distance_thresh)
+
         try:
             score = get_locality_metric(pointcloud(points[idx]))
         except np.linalg.LinAlgError:
@@ -182,9 +176,15 @@ def euclidean_segmentation(
                 current_point, local_distrance_threshold
             )
             score = get_locality_metric(pointcloud(points[idx]))
+
+        if len(idx) <= 2:
+            unsegmented_points -= {tuple(point) for point in points[idx]}
+            continue
+
         local_colors = colors[idx] if colors.shape[0] != 0 else None
         segments.append((pointcloud(points[idx], colors=local_colors), current_point, local_distrance_threshold))
         unsegmented_points -= {tuple(point) for point in points[idx]}
+
     return segments
 
 
