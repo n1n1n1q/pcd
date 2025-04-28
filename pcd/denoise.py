@@ -54,7 +54,7 @@ if __name__ == "__main__":
     print(f"Using denoising {args.approach} approach")
     denoise_start_time = time.time()
     if args.split:
-        denoised = local_denoise(model, n=5, denoise_function=denoise_function)
+        denoised = local_denoise(model, denoise_function=denoise_function)
     else:
         denoised = denoise_function(model)
     print(f"Denoised point cloud with {len(denoised.points)} points")

@@ -1,8 +1,12 @@
 import numpy as np
 import open3d as o3d
-from typing import Tuple, Callable, List, Optional
-from pcd.data_processor.data import pointcloud,visualise_pcd
-from pcd.pipeline.utils import get_orthogonal_basis_regression, get_orthogonal_basis_pca, euclidean_segmentation 
+from typing import Tuple, Callable, Optional
+from pcd.data_processor.data import pointcloud
+from pcd.pipeline.utils import (
+    get_orthogonal_basis_regression,
+    get_orthogonal_basis_pca,
+    euclidean_segmentation,
+)
 
 if o3d.core.cuda.is_available():
     from open3d.cuda.pybind.geometry import PointCloud
@@ -48,7 +52,7 @@ def local_denoise(
     basis_function: str = "regression",
     distance_threshold: int = 3,
     step_size: float = 0.2,
-    min_points = 150
+    min_points=150,
 ) -> PointCloud:
     """
     Apply denoising locally by dividing the point cloud into n×n regions.

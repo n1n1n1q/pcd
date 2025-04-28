@@ -2,8 +2,8 @@
 Half sphere example using least squares regression for denoising
 """
 
-import numpy as np
 from typing import NoReturn
+import numpy as np
 
 from pcd.misc.misc import sphere
 from pcd.data_processor.data import (
@@ -23,7 +23,7 @@ def main() -> NoReturn:
     adds noise, applies quadratic regression denoising, and visualizes the result.
     """
     sphere_pcd = sphere()
-    upper_sphere, lower_sphere = split(sphere_pcd)
+    upper_sphere, _ = split(sphere_pcd)
     upper_sphere = pointcloud(np.asarray(upper_sphere.points) + np.array([0, 0, 1]))
     noised_upper_sphere = add_noise(upper_sphere, 0.1, 0.1)
     denoised = denoise_ls(noised_upper_sphere)

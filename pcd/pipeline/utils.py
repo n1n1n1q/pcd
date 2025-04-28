@@ -83,9 +83,11 @@ def get_orthogonal_basis_pca(pcd: PointCloud) -> np.ndarray:
 
     new_basis = np.column_stack((v1, v2, v3))
     return new_basis
-    
 
-def euclidean_segmentation(pcd, distance_thresh=0.1, min_segment_size=100, step_size=0.2):
+
+def euclidean_segmentation(
+    pcd, distance_thresh=0.1, min_segment_size=100, step_size=0.2
+):
     """
     :param pcd: Open3D point cloud
     :param distance_thresh: Maximum distance between points in a cluster
@@ -105,17 +107,19 @@ def euclidean_segmentation(pcd, distance_thresh=0.1, min_segment_size=100, step_
 
     segments = []
 
-    unsegmented_points = {tuple(point) for point in points }
+    unsegmented_points = {tuple(point) for point in points}
 
     while unsegmented_points:
         current_point = next(iter(unsegmented_points))
         _, idx, _ = pcd_tree.search_radius_vector_3d(current_point, distance_thresh)
 
         local_distrance_threshold = distance_thresh
-        
+
         while len(idx) < min_segment_size:
             local_distrance_threshold += step_size
-            _, idx, _ = pcd_tree.search_radius_vector_3d(current_point, local_distrance_threshold)
+            _, idx, _ = pcd_tree.search_radius_vector_3d(
+                current_point, local_distrance_threshold
+            )
 
         segments.append(pointcloud(points[idx]))
         unsegmented_points -= {tuple(point) for point in points[idx]}

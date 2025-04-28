@@ -3,7 +3,6 @@ Sphere example -- demonstration of point cloud splitting, noise addition and den
 """
 
 import open3d as o3d
-import numpy as np
 from typing import NoReturn
 from pcd.misc.misc import sphere
 from pcd.data_processor.data import split, add_noise
@@ -19,7 +18,7 @@ def main() -> NoReturn:
     """
     model = sphere()
     print("=== Split cloud ===")
-    pc1, pc2 = split(model)
+    pc1, _ = split(model)
     o3d.visualization.draw_geometries([pc1])
     print("=== Noisy cloud ===")
     noisy_pc1 = add_noise(pc1, 0.1, 0.1)

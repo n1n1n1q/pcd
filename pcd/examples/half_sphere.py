@@ -23,10 +23,10 @@ def main() -> NoReturn:
     adds noise, applies Fourier denoising, and visualizes the result.
     """
     sphere_pcd = sphere()
-    upper_sphere, lower_sphere = split(sphere_pcd)
+    upper_sphere, _ = split(sphere_pcd)
     upper_sphere = pointcloud(np.asarray(upper_sphere.points) + np.array([0, 0, 1]))
     noised_upper_sphere = add_noise(upper_sphere, 0.1, 0.1)
-    denoised = denoise_single(noised_upper_sphere)
+    denoised = denoise_fft(noised_upper_sphere)
     visualise_pcds(denoised)
 
 

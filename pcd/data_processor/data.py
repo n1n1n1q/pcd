@@ -48,10 +48,49 @@ def save(file_path: str, model: PointCloud) -> None:
 
 
 def add_noise(
+    model: PointCloud, noise_level: float, noise_extra_level: float = 0.0
+) -> PointCloud:
+    """
+    Add noise to the point cloud by moving existing points.
+
+    Args:
+        model: Input point cloud
+        noise_level: Standard deviation of the Gaussian noise
+        noise_extra_level: Unused parameter (kept for API compatibility)
+
+    Returns:
+        PointCloud: Point cloud with added noise
+    """
+    points = np.asarray(model.points).copy()
+    colors = (
+        np.asarray(model.colors).copy() if len(np.asarray(model.colors)) > 0 else None
+    )
+
+    num_points = points.shape[0]
+    x_noise = np.random.normal(
+        0, noise_level * 0.3, num_points
+    )  # Less noise in x-direction
+    y_noise = np.random.normal(
+        0, noise_level * 0.3, num_points
+    )  # Less noise in y-direction
+    z_noise = np.random.normal(0, noise_level, num_points)  # Full noise in z-direction
+
+    noise = np.zeros_like(points)
+    noise[:, 0] = x_noise
+    noise[:, 1] = y_noise
+    noise[:, 2] = z_noise
+
+    points += noise
+
+    noisy_model = pointcloud(points, colors=colors)
+    return noisy_model
+
+
+def add_new_noise(
     model: PointCloud, noise_level: float, noise_extra_level: float
 ) -> PointCloud:
     """
-    Add noise to the point cloud by adding extra points with noise.
+    Add noise to the point cloud by adding extra points with noise in all dimensions.
 
     Args:
         model: Input point cloud
@@ -62,14 +101,24 @@ def add_noise(
         PointCloud: Point cloud with added noise
     """
     points = np.asarray(model.points)
-    colors = np.asarray(model.colors).copy()
+    colors = (
+        np.asarray(model.colors).copy() if len(np.asarray(model.colors)) > 0 else None
+    )
     noise_size = int(points.shape[0] * noise_extra_level)
+
+    x_noise = np.random.normal(0, noise_level * 0.3, noise_size)
+    y_noise = np.random.normal(0, noise_level * 0.3, noise_size)
     z_noise = np.random.normal(0, noise_level, noise_size)
+
     noise = np.zeros((noise_size, 3))
+    noise[:, 0] = x_noise
+    noise[:, 1] = y_noise
     noise[:, 2] = z_noise
+
     n = np.random.choice(points.shape[0], size=noise_size, replace=True)
     n = points[n]
     results = np.concatenate((points, n + noise), axis=0)
+
     noisy_model = pointcloud(results, colors=colors)
     return noisy_model
 
@@ -135,7 +184,7 @@ def split(model: PointCloud, frac: float = 0.5) -> Tuple[PointCloud, PointCloud]
     return pointcloud(points1), pointcloud(points2)
 
 
-def pointcloud(points: np.ndarray, colors: np.ndarray=None) -> PointCloud:
+def pointcloud(points: np.ndarray, colors: np.ndarray = None) -> PointCloud:
     """
     Create an Open3D point cloud from a NumPy array.
 
@@ -150,16 +199,6 @@ def pointcloud(points: np.ndarray, colors: np.ndarray=None) -> PointCloud:
     if colors is not None:
         model.colors = o3d.utility.Vector3dVector(colors)
     return model
-
-
-def visualise_pcd(pcd: PointCloud) -> None:
-    """
-    Visualize a single point cloud.
-
-    Args:
-        pcd: Point cloud to visualize
-    """
-    o3d.visualization.draw_geometries([pcd])
 
 
 def visualise_pcds(*pcds: PointCloud) -> None:

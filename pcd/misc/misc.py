@@ -75,3 +75,35 @@ def sphere_with_blobs(
 
     pcd.points = o3d.utility.Vector3dVector(points)
     return pcd
+
+
+def save_point_cloud_screenshot(
+    point_cloud: o3d.geometry.PointCloud,
+    image_path: str,
+    width: int = 1024,
+    height: int = 768,
+) -> bool:
+    """
+    Render a PointCloud offscreen and save the view as an image.
+
+    Args:
+        point_cloud: The Open3D PointCloud to render.
+        image_path:   Path where to save the screenshot, e.g. "view.png".
+        width:        Width of the offscreen window in pixels.
+        height:       Height of the offscreen window in pixels.
+
+    Returns:
+        True on success, False on failure.
+    """
+    vis = o3d.visualization.Visualizer()
+    vis.create_window(
+        window_name="Offscreen", width=width, height=height, visible=False
+    )
+    vis.add_geometry(point_cloud)
+    vis.poll_events()
+    vis.update_renderer()
+    success = vis.capture_screen_image(image_path, do_render=True)
+    vis.destroy_window()
+    if not success:
+        print(f"Could not save screenshot to {image_path}")
+    return success
