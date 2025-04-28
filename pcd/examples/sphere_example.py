@@ -11,6 +11,7 @@ from pcd.pipeline.utils import crop_outliers
 from pcd.regressor.regressor import denoise_ls
 from pcd.fourier.denoise import denoise_fft
 
+
 def main() -> None:
     """
     Main function demonstrating sphere point cloud processing.
@@ -30,7 +31,7 @@ def main() -> None:
         distance_threshold=0.6,
         step_size=0.05,
         locality_threshold=0.005,
-        post_process=crop_outliers(0.10)
+        post_process=crop_outliers(0.10),
     )
 
     visualise_pcds(denoised)

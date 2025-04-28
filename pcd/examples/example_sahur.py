@@ -17,13 +17,13 @@ if __name__ == "__main__":
     pcd_noised = add_noise_inplace(pcd, 0.1, 0.8)
     visualise_pcds(pcd_noised)
     denoised = local_denoise(
-            pcd_noised,
-            denoise_function=denoise_ls,
-            basis_function="pca",
-            distance_threshold=3,
-            step_size=0.1,
-            locality_threshold=0.5
-        )
+        pcd_noised,
+        denoise_function=denoise_ls,
+        basis_function="pca",
+        distance_threshold=3,
+        step_size=0.1,
+        locality_threshold=0.5,
+    )
     for i in range(2):
         denoised = local_denoise(
             denoised,
@@ -31,9 +31,8 @@ if __name__ == "__main__":
             basis_function="pca",
             distance_threshold=2,
             step_size=0.1,
-            locality_threshold=1
+            locality_threshold=1,
         )
     pcd_noised.translate(np.array([-60, 0, 0]))
     pcd.translate(np.array([60, 0, 0]))
     visualise_pcds(pcd_noised, denoised, pcd)
-
