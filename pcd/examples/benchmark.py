@@ -68,9 +68,8 @@ if __name__ == "__main__":
         visualise_pcds(noisy)
         for func in ["fft", "ls"]:
             DENOISE_FUNC = denoise_fft if func == "fft" else denoise_ls
-            POSTPROCESS_FUNCTION = crop_outliers(0.05) if func == "fft" else None
-            print(f"{func} global denoising")
-            denoise_and_eval(noisy, gt, DENOISE_FUNC)
+            # print(f"{func} global denoising")
+            # denoise_and_eval(noisy, gt, DENOISE_FUNC)
             print(f"{func} local denoising (with PCA basis)")
             BASIS_FUNC = "pca"
             denoise_and_eval(noisy, gt, local_denoise_wrapped)
