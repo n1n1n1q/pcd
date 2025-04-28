@@ -47,7 +47,7 @@ def save(file_path: str, model: PointCloud) -> None:
         print(f"Error saving point cloud to {file_path}: {e}")
 
 
-def add_noise(
+def add_noise_inplace(
     model: PointCloud, noise_level: float, noise_extra_level: float = 0.0
 ) -> PointCloud:
     """
@@ -66,27 +66,26 @@ def add_noise(
         np.asarray(model.colors).copy() if len(np.asarray(model.colors)) > 0 else None
     )
 
-    num_points = points.shape[0]
+    noise_size = int(points.shape[0] * noise_extra_level)
+    random_indices = np.random.choice(points.shape[0], size=noise_size, replace=False)
     x_noise = np.random.normal(
-        0, noise_level * 0.3, num_points
-    )  # Less noise in x-direction
+        0, noise_level * 0.3, noise_size)
     y_noise = np.random.normal(
-        0, noise_level * 0.3, num_points
-    )  # Less noise in y-direction
-    z_noise = np.random.normal(0, noise_level, num_points)  # Full noise in z-direction
+        0, noise_level * 0.3, noise_size)
+    z_noise = np.random.normal(0, noise_level, noise_size) 
 
-    noise = np.zeros_like(points)
+    noise = np.zeros((noise_size, 3))
     noise[:, 0] = x_noise
     noise[:, 1] = y_noise
     noise[:, 2] = z_noise
 
-    points += noise
+    points[random_indices] += noise
 
     noisy_model = pointcloud(points, colors=colors)
     return noisy_model
 
 
-def add_new_noise(
+def add_noise(
     model: PointCloud, noise_level: float, noise_extra_level: float
 ) -> PointCloud:
     """
@@ -101,9 +100,7 @@ def add_new_noise(
         PointCloud: Point cloud with added noise
     """
     points = np.asarray(model.points)
-    colors = (
-        np.asarray(model.colors).copy() if len(np.asarray(model.colors)) > 0 else None
-    )
+    colors = np.asarray(model.colors)
     noise_size = int(points.shape[0] * noise_extra_level)
 
     x_noise = np.random.normal(0, noise_level * 0.3, noise_size)
@@ -118,6 +115,7 @@ def add_new_noise(
     n = np.random.choice(points.shape[0], size=noise_size, replace=True)
     n = points[n]
     results = np.concatenate((points, n + noise), axis=0)
+    colors = np.concatenate((colors, colors[:noise_size]))
 
     noisy_model = pointcloud(results, colors=colors)
     return noisy_model
@@ -139,8 +137,8 @@ def add_gaussian_noise(pcd: PointCloud, scale: float) -> PointCloud:
     noised.points = o3d.utility.Vector3dVector(
         points + np.random.normal(loc=0, scale=scale, size=points.shape)
     )
-    noised.colors = o3d.utility.Vector3dVector(pcd.color)
-    return pcd
+    noised.colors = o3d.utility.Vector3dVector(pcd.colors)
+    return noised
 
 
 def sample(model: PointCloud, sample_size: float) -> PointCloud:

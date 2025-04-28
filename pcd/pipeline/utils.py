@@ -1,3 +1,4 @@
+import random
 import numpy as np
 import open3d as o3d
 
@@ -5,7 +6,9 @@ if o3d.core.cuda.is_available():
     from open3d.cuda.pybind.geometry import PointCloud
 else:
     from open3d.cpu.pybind.geometry import PointCloud
+from typing import Tuple, Callable, Optional
 from pcd.pipeline.pca import pca_power_iteration
+from pcd.regressor.regressor import fit_quadratic
 from pcd.data_processor.data import pointcloud
 
 
@@ -85,8 +88,62 @@ def get_orthogonal_basis_pca(pcd: PointCloud) -> np.ndarray:
     return new_basis
 
 
+def change_of_basis_denoise(
+    pcd: PointCloud,
+    denoise_function: Callable[[PointCloud], PointCloud],
+    basis_function: Optional[Callable[[PointCloud], np.ndarray]],
+) -> PointCloud:
+    """
+    Denoise a point cloud by changing basis, applying denoising, then transforming back.
+
+    Args:
+        pcd: Input point cloud
+        denoise_function: Function that takes a point cloud and returns a denoised point cloud
+        basis_function: Function that computes the new basis for the point cloud
+
+    Returns:
+        PointCloud: Denoised point cloud
+    """
+    new_basis = basis_function(pcd)
+    transition_marix = new_basis.T
+    points = np.asarray(pcd.points)
+    for i, v in enumerate(points):
+        points[i] = transition_marix @ v
+
+    denoised = denoise_function(pointcloud(points))
+
+    denoised_points = np.asarray(denoised.points)
+
+    for i, v in enumerate(denoised_points):
+        denoised_points[i] = new_basis @ v
+
+    return pointcloud(denoised_points, colors=np.asarray(pcd.colors))
+
+
+def get_locality_metric(pcd):
+    new_basis = get_orthogonal_basis_pca(pcd)
+    transition_marix = new_basis.T
+    points = np.asarray(pcd.points)
+    for i, v in enumerate(points):
+        points[i] = transition_marix @ v
+    
+    coeffs = fit_quadratic(pcd)
+    rmse = 0
+    for x, y, z in pcd.points:
+        z_fit = (
+            coeffs[0] * x**2
+            + coeffs[1] * y**2
+            + coeffs[2] * x * y
+            + coeffs[3] * x
+            + coeffs[4] * y
+            + coeffs[5]
+        )
+        rmse += (z - z_fit) ** 2
+    return rmse / len(pcd.points)
+
 def euclidean_segmentation(
-    pcd, distance_thresh=0.1, min_segment_size=100, step_size=0.2
+    pcd, distance_thresh=0.1, step_size=0.2,
+    locality_threshold=0.50
 ):
     """
     :param pcd: Open3D point cloud
@@ -110,18 +167,38 @@ def euclidean_segmentation(
     unsegmented_points = {tuple(point) for point in points}
 
     while unsegmented_points:
-        current_point = next(iter(unsegmented_points))
+        current_point = random.choice(list(unsegmented_points))
         _, idx, _ = pcd_tree.search_radius_vector_3d(current_point, distance_thresh)
+        try:
+            score = get_locality_metric(pointcloud(points[idx]))
+        except np.linalg.LinAlgError:
+            unsegmented_points -= {tuple(point) for point in points[idx]}
+            continue
 
         local_distrance_threshold = distance_thresh
-
-        while len(idx) < min_segment_size:
-            local_distrance_threshold += step_size
+        while score > locality_threshold:
+            local_distrance_threshold -= step_size
             _, idx, _ = pcd_tree.search_radius_vector_3d(
                 current_point, local_distrance_threshold
             )
-
-        segments.append(pointcloud(points[idx]))
+            score = get_locality_metric(pointcloud(points[idx]))
+        local_colors = colors[idx] if colors.shape[0] != 0 else None
+        segments.append((pointcloud(points[idx], colors=local_colors), current_point, local_distrance_threshold))
         unsegmented_points -= {tuple(point) for point in points[idx]}
-
     return segments
+
+
+def crop_outliers(amount):
+
+    def wrapper(local_denoised_points, centroid, radius):
+        local_denoised_points = [
+            point 
+            for point in local_denoised_points
+            if np.linalg.norm(point - centroid) <= radius * (1 - amount)
+        ]
+
+        local_denoised_points = np.vstack(local_denoised_points)
+        return local_denoised_points
+
+    return wrapper
+

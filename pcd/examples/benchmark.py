@@ -9,6 +9,7 @@ from pcd.pipeline.denoise import local_denoise
 from pcd.regressor.regressor import denoise_ls
 from pcd.eval.metrics import hausdorff_distance, chamfer_distance
 from pcd.fourier.denoise import denoise_fft
+from pcd.pipeline.utils import crop_outliers
 
 np.random.seed(100)
 
@@ -38,9 +39,10 @@ def local_denoise_wrapped(pcd):
         pcd,
         denoise_function=DENOISE_FUNC,
         basis_function=BASIS_FUNC,
-        distance_threshold=0.5,
-        step_size=0.4,
-        min_points=200,
+        distance_threshold=0.4,
+        step_size=0.05,
+        locality_threshold=0.05,
+        post_process=POSTPROCESS_FUNCTION
     )
     return denoised
 
@@ -56,9 +58,7 @@ if __name__ == "__main__":
         "cube_blob_3": ("data/cube_blob_3.ply", "data/cube_blob_3_noised.ply"),
         "cube_blob_5": ("data/cube_blob_5.ply", "data/cube_blob_5_noised.ply"),
     }
-    # pcds = {
-    #     "sphere": ("data/sphere.ply", "data/sphere_noised.ply")}
-    for name, (pcd, gt) in pcds.items():
+    for name, (gt, pcd) in pcds.items():
         print(f"Processing {name} point cloud")
         gt = load(gt)
         noisy = load(pcd)
@@ -68,6 +68,7 @@ if __name__ == "__main__":
         visualise_pcds(noisy)
         for func in ["fft", "ls"]:
             DENOISE_FUNC = denoise_fft if func == "fft" else denoise_ls
+            POSTPROCESS_FUNCTION = crop_outliers(0.05) if func == "fft" else None
             print(f"{func} global denoising")
             denoise_and_eval(noisy, gt, DENOISE_FUNC)
             print(f"{func} local denoising (with PCA basis)")

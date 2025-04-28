@@ -35,5 +35,4 @@ def denoise_fft(pc: PointCloud) -> PointCloud:
     height, grid_x, grid_y, sampled_points = plane_projection(points, 100)
     filtered_heights = fourier_filter(height)
     grid_points = grid_to_points(filtered_heights, grid_x, grid_y)
-    grid_points = filter_fourier_artifacts(sampled_points, grid_points)
     return o3d.geometry.PointCloud(o3d.utility.Vector3dVector(grid_points))

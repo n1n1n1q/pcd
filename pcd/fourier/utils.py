@@ -70,7 +70,7 @@ def plane_projection(
     return grid, grid_x, grid_y, sampled_points
 
 
-def fourier_filter(height: np.ndarray, radius: int = 20) -> np.ndarray:
+def fourier_filter(height: np.ndarray, radius: int = 10) -> np.ndarray:
     """
     Apply a low-pass filter in the frequency domain.
 
