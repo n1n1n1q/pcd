@@ -126,7 +126,7 @@ def get_locality_metric(pcd):
     points = np.asarray(pcd.points).copy()
     for i, v in enumerate(points):
         points[i] = transition_marix @ v
-    
+
     coeffs = fit_quadratic(pcd)
     rmse = 0
     for x, y, z in pcd.points:
@@ -141,9 +141,9 @@ def get_locality_metric(pcd):
         rmse += (z - z_fit) ** 2
     return rmse / len(pcd.points)
 
+
 def euclidean_segmentation(
-    pcd, distance_thresh=0.1, step_size=0.2,
-    locality_threshold=0.50
+    pcd, distance_thresh=0.1, step_size=0.2, locality_threshold=0.50
 ):
     """
     :param pcd: Open3D point cloud
@@ -183,7 +183,13 @@ def euclidean_segmentation(
             continue
 
         local_colors = colors[idx] if colors.shape[0] != 0 else None
-        segments.append((pointcloud(points[idx], colors=local_colors), current_point, local_distrance_threshold))
+        segments.append(
+            (
+                pointcloud(points[idx], colors=local_colors),
+                current_point,
+                local_distrance_threshold,
+            )
+        )
         unsegmented_points -= {tuple(point) for point in points[idx]}
 
     return segments
@@ -193,7 +199,7 @@ def crop_outliers(amount):
 
     def wrapper(local_denoised_points, centroid, radius):
         local_denoised_points = [
-            point 
+            point
             for point in local_denoised_points
             if np.linalg.norm(point - centroid) <= radius * (1 - amount)
         ]
@@ -202,4 +208,3 @@ def crop_outliers(amount):
         return local_denoised_points
 
     return wrapper
-

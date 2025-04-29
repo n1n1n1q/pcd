@@ -68,11 +68,9 @@ def add_noise_inplace(
 
     noise_size = int(points.shape[0] * noise_extra_level)
     random_indices = np.random.choice(points.shape[0], size=noise_size, replace=False)
-    x_noise = np.random.normal(
-        0, noise_level * 0.3, noise_size)
-    y_noise = np.random.normal(
-        0, noise_level * 0.3, noise_size)
-    z_noise = np.random.normal(0, noise_level, noise_size) 
+    x_noise = np.random.normal(0, noise_level * 0.3, noise_size)
+    y_noise = np.random.normal(0, noise_level * 0.3, noise_size)
+    z_noise = np.random.normal(0, noise_level, noise_size)
 
     noise = np.zeros((noise_size, 3))
     noise[:, 0] = x_noise

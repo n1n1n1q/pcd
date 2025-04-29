@@ -42,7 +42,7 @@ def local_denoise_wrapped(pcd):
         distance_threshold=0.4,
         step_size=0.05,
         locality_threshold=0.05,
-        post_process=POSTPROCESS_FUNCTION
+        post_process=POSTPROCESS_FUNCTION,
     )
     return denoised
 
