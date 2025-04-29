@@ -8,6 +8,8 @@ from pcd.pipeline.utils import (
     euclidean_segmentation,
     change_of_basis_denoise
 )
+from pcd.data_processor.data import visualise_pcds
+
 
 if o3d.core.cuda.is_available():
     from open3d.cuda.pybind.geometry import PointCloud
@@ -54,16 +56,18 @@ def local_denoise(
 
     for i, (segment, centroid, radius) in enumerate(segments):
         filtered_points = np.asarray(segment.points)
+        print(f"{i}/{len(segments)}")
         if filtered_points.shape[0] > 0:
             denoised_pcd = change_of_basis_denoise(
                 pointcloud(filtered_points, colors=np.asarray(segment.colors)),
                 denoise_function=denoise_function,
                 basis_function=basis_function,
             )                
-
+            
             local_denoised_points = np.asarray(denoised_pcd.points)
             if post_process is not None:
                 local_denoised_points = post_process(local_denoised_points, centroid, radius)
+
 
             if denoised_points is None:
                 denoised_points = local_denoised_points

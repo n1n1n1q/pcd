@@ -5,7 +5,7 @@ Sphere example -- demonstration of point cloud splitting, noise addition and den
 import numpy as np
 from pcd.data_processor.data import visualise_pcds
 from pcd.misc.misc import sphere_with_blobs, sphere, save_point_cloud_screenshot
-from pcd.data_processor.data import add_noise
+from pcd.data_processor.data import add_noise, pointcloud
 from pcd.pipeline.denoise import local_denoise
 from pcd.pipeline.utils import crop_outliers
 from pcd.regressor.regressor import denoise_ls
@@ -23,13 +23,15 @@ def main() -> None:
     pcd1 = sphere_with_blobs(pcd, k=5, blob_radius=0.9, blob_height=0.5)
     sphere_noised = add_noise(pcd1, 0.1, 0.1)
 
+    visualise_pcds(sphere_noised)
+
     denoised = local_denoise(
         sphere_noised,
         denoise_function=denoise_fft,
         basis_function="pca",
-        distance_threshold=0.6,
+        distance_threshold=0.45,
         step_size=0.05,
-        locality_threshold=0.005,
+        locality_threshold=0.3,
         post_process=crop_outliers(0.10)
     )
 

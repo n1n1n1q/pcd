@@ -161,6 +161,7 @@ def euclidean_segmentation(
 
     while unsegmented_points:
         current_point = random.choice(list(unsegmented_points))
+        print(len(unsegmented_points))
         _, idx, _ = pcd_tree.search_radius_vector_3d(current_point, distance_thresh)
 
         try:

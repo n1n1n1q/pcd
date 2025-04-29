@@ -33,7 +33,7 @@ def compute_coordinate_system(points: np.ndarray) -> Tuple[np.ndarray, np.ndarra
 
 
 def plane_projection(
-    points: np.ndarray, size: int
+    points: np.ndarray
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Project 3D points onto a regular 2D grid.
@@ -51,6 +51,10 @@ def plane_projection(
     """
     min_ = np.min(points, axis=0)
     max_ = np.max(points, axis=0)
+
+    dx = max_[0] - min_[0]        
+    size = int(dx / 0.03)
+
     grid_x, grid_y = np.linspace(min_[0], max_[0], size), np.linspace(
         min_[1], max_[1], size
     )
@@ -70,7 +74,7 @@ def plane_projection(
     return grid, grid_x, grid_y, sampled_points
 
 
-def fourier_filter(height: np.ndarray, radius: int = 10) -> np.ndarray:
+def fourier_filter(height: np.ndarray, radius: int = 3) -> np.ndarray:
     """
     Apply a low-pass filter in the frequency domain.
 
